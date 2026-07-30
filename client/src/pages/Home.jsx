@@ -118,13 +118,12 @@ function Home() {
                   </span>
                 </div>
                 <span
-                  className={`game-card-status ${
-                    game.status === 'completed'
+                  className={`game-card-status ${game.status === 'completed'
                       ? 'status-completed'
                       : 'status-in-progress'
-                  }`}
+                    }`}
                 >
-                  {game.status === 'completed' ? '✓ Done' : '● Live'}
+                  {game.status === 'completed' ? '✓ Completed' : '● Live'}
                 </span>
               </div>
             ))}

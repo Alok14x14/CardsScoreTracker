@@ -186,7 +186,7 @@ function TricksModal({ players, roundNumber, roundScores, onSubmit, onClose, ini
         <p className="modal-subtitle">
           {isEditing
             ? 'Update the tricks won for this round.'
-            : 'Round is done! Enter how many tricks each player actually won.'}
+            : 'Round is Over! Enter how many tricks each player actually won.'}
         </p>
 
         <div className={`tricks-counter ${totalTricks === 13 ? 'tricks-valid' : totalTricks > 13 ? 'tricks-over' : ''}`}>

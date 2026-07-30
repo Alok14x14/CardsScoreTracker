@@ -12,7 +12,7 @@ function App() {
         <div className="container">
           <a href="/" className="logo">
             <span className="logo-icon">♠</span>
-            <span>CallBreak Casino Tracker</span>
+            <span>CallBreak Score Tracker</span>
           </a>
         </div>
       </header>
