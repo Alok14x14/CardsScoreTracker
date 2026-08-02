@@ -8,7 +8,7 @@ const playerSuits = ['♠', '♥', '♦', '♣'];
 function CreateGame() {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const [players, setPlayers] = useState(['', '', '', '']);
+  const [players, setPlayers] = useState(['Player 1', 'Player 2', 'Player 3', 'Player 4']);
   const [totalRounds, setTotalRounds] = useState(5);
   const [firstPlayerIndex, setFirstPlayerIndex] = useState(0);
   const [error, setError] = useState('');
@@ -18,12 +18,11 @@ function CreateGame() {
     if (user) {
       const defaultName = user.name || user.username;
       setPlayers((prev) => {
-        if (!prev[0]) {
-          const next = [...prev];
+        const next = [...prev];
+        if (next[0] === 'Player 1' || !next[0]) {
           next[0] = defaultName;
-          return next;
         }
-        return prev;
+        return next;
       });
     }
   }, [user]);
@@ -49,12 +48,8 @@ function CreateGame() {
       return;
     }
 
-    // Validate all names are filled
-    const trimmed = players.map((p) => p.trim());
-    if (trimmed.some((p) => p.length === 0)) {
-      setError('All 4 player names are required.');
-      return;
-    }
+    // Default any blank player name to Player 1, Player 2, etc.
+    const trimmed = players.map((p, i) => p.trim() || `Player ${i + 1}`);
 
     // Check for duplicates
     const unique = new Set(trimmed.map((p) => p.toLowerCase()));
@@ -123,7 +118,7 @@ function CreateGame() {
           )}
 
           <p className="text-secondary" style={{ marginBottom: '24px', fontSize: '0.9rem' }}>
-            Enter the names of all 4 players to begin.
+            Enter player names or use the default names to begin.
           </p>
 
           <div className="players-grid">
@@ -139,7 +134,7 @@ function CreateGame() {
                   <input
                     type="text"
                     className="input-field"
-                    placeholder={`Player ${i + 1} name`}
+                    placeholder={`Player ${i + 1}`}
                     value={name}
                     onChange={(e) => updatePlayer(i, e.target.value)}
                     maxLength={20}
