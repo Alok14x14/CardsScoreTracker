@@ -283,28 +283,10 @@ function Scorecard() {
               <strong>Round {pendingRound.roundNumber} in progress</strong>
               <span>
                 {isCreator
-                  ? 'Calls are locked. Play the round, then enter tricks won.'
+                  ? 'Calls are locked. Play the round, then use the top controls to enter tricks won.'
                   : 'Waiting for game creator to enter tricks.'}
               </span>
             </div>
-            {isCreator && (
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => { setEditingRound(pendingRound); setShowCallsModal(true); }}
-                  id="banner-edit-calls-btn"
-                >
-                  ✏️ Edit Calls
-                </button>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => { setEditingRound(null); setShowTricksModal(true); }}
-                  id="banner-enter-tricks-btn"
-                >
-                  Enter Tricks →
-                </button>
-              </div>
-            )}
           </div>
         )}
 
