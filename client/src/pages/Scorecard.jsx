@@ -234,15 +234,24 @@ function Scorecard() {
                   </button>
                 )}
 
-                {/* Show "Enter Tricks" when there's a pending round */}
+                {/* Show "Edit Calls" and "Enter Tricks" when there's a pending round */}
                 {!isComplete && pendingRound && (
-                  <button
-                    className="btn btn-primary enter-tricks-btn"
-                    onClick={() => { setEditingRound(null); setShowTricksModal(true); }}
-                    id="enter-tricks-btn"
-                  >
-                    🏆 Enter Tricks (R{pendingRound.roundNumber})
-                  </button>
+                  <>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => { setEditingRound(pendingRound); setShowCallsModal(true); }}
+                      id="edit-calls-btn"
+                    >
+                      ✏️ Edit Calls (R{pendingRound.roundNumber})
+                    </button>
+                    <button
+                      className="btn btn-primary enter-tricks-btn"
+                      onClick={() => { setEditingRound(null); setShowTricksModal(true); }}
+                      id="enter-tricks-btn"
+                    >
+                      🏆 Enter Tricks (R{pendingRound.roundNumber})
+                    </button>
+                  </>
                 )}
 
                 {/* Show "Start Rematch" when game is completed */}
@@ -279,12 +288,22 @@ function Scorecard() {
               </span>
             </div>
             {isCreator && (
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => { setEditingRound(null); setShowTricksModal(true); }}
-              >
-                Enter Tricks →
-              </button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => { setEditingRound(pendingRound); setShowCallsModal(true); }}
+                  id="banner-edit-calls-btn"
+                >
+                  ✏️ Edit Calls
+                </button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => { setEditingRound(null); setShowTricksModal(true); }}
+                  id="banner-enter-tricks-btn"
+                >
+                  Enter Tricks →
+                </button>
+              </div>
             )}
           </div>
         )}
