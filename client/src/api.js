@@ -9,6 +9,28 @@ const api = axios.create({
   },
 });
 
+// Attach Authorization header automatically if token exists in localStorage
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Auth API calls
+export const loginUser = (login, password) =>
+  api.post('/auth/login', { login, password }).then((res) => res.data);
+
+export const registerUser = (username, email, password, name) =>
+  api.post('/auth/register', { username, email, password, name }).then((res) => res.data);
+
+export const getMe = () =>
+  api.get('/auth/me').then((res) => res.data);
+
 // Game API calls
 export const createGame = (players, totalRounds, firstPlayerIndex) =>
   api.post('/games', { players, totalRounds, firstPlayerIndex }).then((res) => res.data);
@@ -16,8 +38,8 @@ export const createGame = (players, totalRounds, firstPlayerIndex) =>
 export const getGame = (code) =>
   api.get(`/games/${code}`).then((res) => res.data);
 
-export const getRecentGames = () =>
-  api.get('/games').then((res) => res.data);
+export const getRecentGames = (userOnly = false) =>
+  api.get('/games', { params: { userOnly } }).then((res) => res.data);
 
 // Step 1: Submit calls to start a round
 export const submitCalls = (code, playerCalls) =>

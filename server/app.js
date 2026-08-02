@@ -6,6 +6,7 @@ require('dotenv').config();
 const dns = require('dns');
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
+const authRouter = require('./routes/auth');
 const gamesRouter = require('./routes/games');
 
 const app = express();
@@ -39,6 +40,7 @@ app.use(async (req, res, next) => {
 });
 
 // Routes
+app.use('/api/auth', authRouter);
 app.use('/api/games', gamesRouter);
 
 // Health check

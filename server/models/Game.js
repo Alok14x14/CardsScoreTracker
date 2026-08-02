@@ -27,6 +27,11 @@ const gameSchema = new mongoose.Schema(
       minlength: 6,
       maxlength: 6,
     },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
     players: {
       type: [String],
       required: true,

@@ -1,16 +1,32 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { createGame } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 const playerSuits = ['♠', '♥', '♦', '♣'];
 
 function CreateGame() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [players, setPlayers] = useState(['', '', '', '']);
   const [totalRounds, setTotalRounds] = useState(5);
   const [firstPlayerIndex, setFirstPlayerIndex] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      const defaultName = user.name || user.username;
+      setPlayers((prev) => {
+        if (!prev[0]) {
+          const next = [...prev];
+          next[0] = defaultName;
+          return next;
+        }
+        return prev;
+      });
+    }
+  }, [user]);
 
   const updatePlayer = (index, value) => {
     const updated = [...players];
@@ -60,9 +76,9 @@ function CreateGame() {
   return (
     <div className="container">
       <div className="create-page">
-        <a href="/" className="back-link animate-fade-in">
+        <Link to="/" className="back-link animate-fade-in">
           ← Back to Home
-        </a>
+        </Link>
 
         <form
           className="glass-card create-form animate-fade-in-up"
@@ -71,6 +87,16 @@ function CreateGame() {
           <h1 className="heading-lg create-form-title">
             <span className="text-gradient">New Game</span>
           </h1>
+
+          {user ? (
+            <div className="user-creator-badge">
+              <span>👤 Creating game as <strong>{user.name || user.username}</strong></span>
+            </div>
+          ) : (
+            <div className="guest-creator-notice">
+              <span>💡 <Link to="/login" className="auth-link">Sign in</Link> to save this game to your profile and recently played list!</span>
+            </div>
+          )}
 
           <p className="text-secondary" style={{ marginBottom: '24px', fontSize: '0.9rem' }}>
             Enter the names of all 4 players to begin.

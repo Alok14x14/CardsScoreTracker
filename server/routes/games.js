@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Game = require('../models/Game');
 const crypto = require('crypto');
+const { optionalAuth } = require('../middleware/auth');
 
 // Generate a unique 6-character game code
 function generateGameCode() {
@@ -20,7 +21,7 @@ function calculateRoundScore(call, tricks) {
 }
 
 // ─── POST /api/games — Create a new game ────────────────────────────────────
-router.post('/', async (req, res) => {
+router.post('/', optionalAuth, async (req, res) => {
   try {
     const { players, totalRounds, firstPlayerIndex } = req.body;
 
@@ -49,6 +50,7 @@ router.post('/', async (req, res) => {
 
     const game = new Game({
       gameCode,
+      createdBy: req.user ? req.user._id : null,
       players: trimmedPlayers,
       totalRounds: totalRounds || 5,
       firstPlayerIndex: validFirstPlayerIndex,
@@ -69,12 +71,26 @@ router.post('/', async (req, res) => {
 });
 
 // ─── GET /api/games — List recent games ──────────────────────────────────────
-router.get('/', async (req, res) => {
+router.get('/', optionalAuth, async (req, res) => {
   try {
-    const games = await Game.find()
+    const { userOnly } = req.query;
+    let query = {};
+
+    if (userOnly === 'true' && req.user) {
+      const userPattern = new RegExp(`^${req.user.username}$|^${req.user.name}$`, 'i');
+      query = {
+        $or: [
+          { createdBy: req.user._id },
+          { players: { $elemMatch: { $regex: userPattern } } },
+        ],
+      };
+    }
+
+    const games = await Game.find(query)
       .sort({ createdAt: -1 })
       .limit(20)
-      .select('gameCode players status totalRounds firstPlayerIndex rounds createdAt');
+      .populate('createdBy', 'username name')
+      .select('gameCode createdBy players status totalRounds firstPlayerIndex rounds createdAt');
 
     const gamesWithTotals = games.map((g) => ({
       ...g.toObject(),

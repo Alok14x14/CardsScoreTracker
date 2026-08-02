@@ -1437,3 +1437,246 @@ tr:hover .edit-round-btn {
     justify-content: center;
   }
 }
+
+/* ─── Header & Auth Additions ───────────────────────────────────────────── */
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: var(--radius-xl);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.88rem;
+  backdrop-filter: blur(8px);
+}
+
+.user-avatar-icon {
+  font-size: 1rem;
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  border-radius: var(--radius-md);
+}
+
+/* Auth Page Layout */
+.auth-page {
+  max-width: 440px;
+  margin: 40px auto;
+}
+
+.auth-form {
+  padding: 32px 28px;
+}
+
+.auth-form-title {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.auth-error-text {
+  color: var(--accent-rose);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.auth-footer-text {
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin-top: 20px;
+}
+
+.auth-link {
+  color: var(--accent-amber);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--transition-fast);
+}
+
+.auth-link:hover {
+  color: var(--accent-gold);
+}
+
+/* Badges for Create Game */
+.user-creator-badge {
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: var(--accent-emerald);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.guest-creator-notice {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Guest Banner */
+.guest-banner {
+  margin-bottom: 32px;
+}
+
+.guest-banner-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  gap: 20px;
+  border-color: rgba(251, 191, 36, 0.25);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(15, 54, 37, 0.4) 100%);
+}
+
+.guest-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.guest-banner-icon {
+  font-size: 2rem;
+}
+
+.guest-banner-info h4 {
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.guest-banner-info p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.guest-banner-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Section Header & Tabs */
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tab-filters {
+  display: flex;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  background: var(--gradient-primary);
+  color: #000;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+/* User Game Card */
+.user-game-card {
+  border-color: rgba(251, 191, 36, 0.4) !important;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(10, 38, 26, 0.8) 100%) !important;
+}
+
+.game-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.user-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-amber);
+  background: rgba(251, 191, 36, 0.15);
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.player-highlight {
+  color: var(--accent-amber);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .guest-banner-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .guest-banner-actions {
+    width: 100%;
+  }
+  .guest-banner-actions .btn {
+    flex: 1;
+    text-align: center;
+  }
+}
+
