@@ -3,13 +3,24 @@ import { createPortal } from 'react-dom';
 
 const suitIcons = ['♠', '♥', '♦', '♣'];
 
-function CallsModal({ players, roundNumber, onSubmit, onClose, initialCalls }) {
+function CallsModal({
+  game,
+  players: propsPlayers,
+  roundNumber: propsRoundNumber,
+  onSubmit,
+  onClose,
+  initialScores,
+  initialCalls: propsInitialCalls,
+}) {
+  const players = propsPlayers || game?.players || [];
+  const roundNumber = propsRoundNumber || (game?.rounds?.length || 0) + 1;
+  const initialCalls = propsInitialCalls || initialScores;
   const isEditing = !!initialCalls;
 
-  const [calls, setCalls] = useState(
+  const [calls, setCalls] = useState(() =>
     players.map((name) => {
       const existing = initialCalls?.find((c) => c.playerName === name);
-      return { playerName: name, call: existing ? String(existing.call) : '' };
+      return { playerName: name, call: existing && existing.call !== null ? String(existing.call) : '' };
     })
   );
   const [error, setError] = useState('');
@@ -109,13 +120,27 @@ function CallsModal({ players, roundNumber, onSubmit, onClose, initialCalls }) {
   return createPortal(modalContent, document.body);
 }
 
-function TricksModal({ players, roundNumber, roundScores, onSubmit, onClose, initialTricks }) {
+function TricksModal({
+  game,
+  round,
+  players: propsPlayers,
+  roundNumber: propsRoundNumber,
+  roundScores: propsRoundScores,
+  onSubmit,
+  onClose,
+  initialTricks: propsInitialTricks,
+}) {
+  const players = propsPlayers || game?.players || [];
+  const activeRound = round || game?.rounds?.find((r) => r.status === 'calling') || game?.rounds?.[game?.rounds?.length - 1];
+  const roundNumber = propsRoundNumber || activeRound?.roundNumber || (game?.rounds?.length || 1);
+  const roundScores = propsRoundScores || activeRound?.scores || [];
+  const initialTricks = propsInitialTricks || (activeRound?.status === 'completed' ? activeRound?.scores : null);
   const isEditing = !!initialTricks;
 
-  const [tricks, setTricks] = useState(
+  const [tricks, setTricks] = useState(() =>
     players.map((name) => {
       const existing = initialTricks?.find((t) => t.playerName === name);
-      return { playerName: name, tricks: existing ? String(existing.tricks) : '' };
+      return { playerName: name, tricks: existing && existing.tricks !== null ? String(existing.tricks) : '' };
     })
   );
   const [error, setError] = useState('');
@@ -128,13 +153,11 @@ function TricksModal({ players, roundNumber, roundScores, onSubmit, onClose, ini
     setError('');
   };
 
-  // Get the call for a player from the round scores
   const getCall = (playerName) => {
     const entry = roundScores?.find((s) => s.playerName === playerName);
     return entry ? entry.call : '?';
   };
 
-  // Live total of entered tricks
   const totalTricks = tricks.reduce((sum, t) => {
     const val = Number(t.tricks);
     return sum + (isNaN(val) ? 0 : val);
@@ -152,7 +175,6 @@ function TricksModal({ players, roundNumber, roundScores, onSubmit, onClose, ini
       }
     }
 
-    // Validate total tricks = 13
     if (totalTricks !== 13) {
       setError(`Total tricks must equal 13 (currently ${totalTricks}).`);
       return;

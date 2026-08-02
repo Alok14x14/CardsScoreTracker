@@ -326,21 +326,25 @@ function Scorecard() {
         {isCreator && showCallsModal && (
           <CallsModal
             game={game}
+            players={game.players}
             roundNumber={editingRound ? editingRound.roundNumber : totalRoundsStarted + 1}
             initialScores={editingRound ? editingRound.scores : null}
+            initialCalls={editingRound ? editingRound.scores : null}
             onSubmit={editingRound ? handleEditCalls : handleSubmitCalls}
             onClose={closeModals}
-            isEditing={!!editingRound}
           />
         )}
 
         {isCreator && showTricksModal && (
           <TricksModal
             game={game}
+            players={game.players}
             round={editingRound || pendingRound}
+            roundNumber={editingRound ? editingRound.roundNumber : pendingRound?.roundNumber}
+            roundScores={(editingRound || pendingRound)?.scores}
+            initialTricks={editingRound?.status === 'completed' ? editingRound.scores : null}
             onSubmit={handleSubmitTricks}
             onClose={closeModals}
-            isEditing={!!editingRound}
           />
         )}
 
