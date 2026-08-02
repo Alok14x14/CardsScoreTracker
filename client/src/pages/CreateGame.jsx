@@ -7,7 +7,7 @@ const playerSuits = ['♠', '♥', '♦', '♣'];
 
 function CreateGame() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [players, setPlayers] = useState(['', '', '', '']);
   const [totalRounds, setTotalRounds] = useState(5);
   const [firstPlayerIndex, setFirstPlayerIndex] = useState(0);
@@ -44,6 +44,11 @@ function CreateGame() {
     e.preventDefault();
     setError('');
 
+    if (!isAuthenticated) {
+      setError('You must be signed in to create a game.');
+      return;
+    }
+
     // Validate all names are filled
     const trimmed = players.map((p) => p.trim());
     if (trimmed.some((p) => p.length === 0)) {
@@ -73,6 +78,29 @@ function CreateGame() {
     }
   };
 
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <div className="container">
+        <div className="create-page">
+          <Link to="/" className="back-link animate-fade-in">
+            ← Back to Home
+          </Link>
+          <div className="glass-card create-form animate-fade-in-up" style={{ textAlign: 'center', padding: '40px 24px' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔒</div>
+            <h2 className="heading-lg" style={{ marginBottom: '12px' }}>Sign In Required</h2>
+            <p className="text-secondary" style={{ marginBottom: '24px', fontSize: '0.95rem' }}>
+              Only authenticated users can create games and manage scores.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <Link to="/login" className="btn btn-primary btn-lg">Sign In</Link>
+              <Link to="/register" className="btn btn-secondary btn-lg">Create Account</Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container">
       <div className="create-page">
@@ -88,13 +116,9 @@ function CreateGame() {
             <span className="text-gradient">New Game</span>
           </h1>
 
-          {user ? (
+          {user && (
             <div className="user-creator-badge">
               <span>👤 Creating game as <strong>{user.name || user.username}</strong></span>
-            </div>
-          ) : (
-            <div className="guest-creator-notice">
-              <span>💡 <Link to="/login" className="auth-link">Sign in</Link> to save this game to your profile and recently played list!</span>
             </div>
           )}
 

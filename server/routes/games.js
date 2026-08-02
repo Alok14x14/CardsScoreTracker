@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Game = require('../models/Game');
 const crypto = require('crypto');
-const { optionalAuth } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 
 // Generate a unique 6-character game code
 function generateGameCode() {
@@ -20,8 +20,17 @@ function calculateRoundScore(call, tricks) {
   }
 }
 
-// ─── POST /api/games — Create a new game ────────────────────────────────────
-router.post('/', optionalAuth, async (req, res) => {
+// Helper to verify game ownership/creator access
+function verifyCreatorAccess(game, user, res) {
+  if (!game.createdBy || game.createdBy.toString() !== user._id.toString()) {
+    res.status(403).json({ error: 'Only the creator of this game can edit scores.' });
+    return false;
+  }
+  return true;
+}
+
+// ─── POST /api/games — Create a new game (Requires Authentication) ───────────
+router.post('/', authenticate, async (req, res) => {
   try {
     const { players, totalRounds, firstPlayerIndex } = req.body;
 
@@ -50,7 +59,7 @@ router.post('/', optionalAuth, async (req, res) => {
 
     const game = new Game({
       gameCode,
-      createdBy: req.user ? req.user._id : null,
+      createdBy: req.user._id,
       players: trimmedPlayers,
       totalRounds: totalRounds || 5,
       firstPlayerIndex: validFirstPlayerIndex,
@@ -70,23 +79,10 @@ router.post('/', optionalAuth, async (req, res) => {
   }
 });
 
-// ─── GET /api/games — List recent games ──────────────────────────────────────
-router.get('/', optionalAuth, async (req, res) => {
+// ─── GET /api/games — List user's recently created games only ─────────────────
+router.get('/', authenticate, async (req, res) => {
   try {
-    const { userOnly } = req.query;
-    let query = {};
-
-    if (userOnly === 'true' && req.user) {
-      const userPattern = new RegExp(`^${req.user.username}$|^${req.user.name}$`, 'i');
-      query = {
-        $or: [
-          { createdBy: req.user._id },
-          { players: { $elemMatch: { $regex: userPattern } } },
-        ],
-      };
-    }
-
-    const games = await Game.find(query)
+    const games = await Game.find({ createdBy: req.user._id })
       .sort({ createdAt: -1 })
       .limit(20)
       .populate('createdBy', 'username name')
@@ -99,7 +95,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
     res.json(gamesWithTotals);
   } catch (err) {
-    console.error('Error fetching games:', err);
+    console.error('Error fetching user games:', err);
     res.status(500).json({ error: 'Failed to fetch games.' });
   }
 });
@@ -107,7 +103,7 @@ router.get('/', optionalAuth, async (req, res) => {
 // ─── GET /api/games/:code — Get game by code ────────────────────────────────
 router.get('/:code', async (req, res) => {
   try {
-    const game = await Game.findOne({ gameCode: req.params.code.toUpperCase() });
+    const game = await Game.findOne({ gameCode: req.params.code.toUpperCase() }).populate('createdBy', 'username name');
 
     if (!game) {
       return res.status(404).json({ error: 'Game not found.' });
@@ -123,14 +119,16 @@ router.get('/:code', async (req, res) => {
   }
 });
 
-// ─── POST /api/games/:code/rounds — Step 1: Submit calls (start a round) ────
-router.post('/:code/rounds', async (req, res) => {
+// ─── POST /api/games/:code/rounds — Step 1: Submit calls (Creator Only) ────
+router.post('/:code/rounds', authenticate, async (req, res) => {
   try {
     const game = await Game.findOne({ gameCode: req.params.code.toUpperCase() });
 
     if (!game) {
       return res.status(404).json({ error: 'Game not found.' });
     }
+
+    if (!verifyCreatorAccess(game, req.user, res)) return;
 
     if (game.status === 'completed') {
       return res.status(400).json({ error: 'Game is already completed.' });
@@ -149,7 +147,6 @@ router.post('/:code/rounds', async (req, res) => {
     }
 
     const { playerCalls } = req.body;
-    // playerCalls: [{ playerName, call }, ...]
 
     if (!playerCalls || playerCalls.length !== 4) {
       return res.status(400).json({ error: 'Calls for all 4 players are required.' });
@@ -185,14 +182,16 @@ router.post('/:code/rounds', async (req, res) => {
   }
 });
 
-// ─── PUT /api/games/:code/rounds/:roundNumber/tricks — Step 2: Submit tricks ─
-router.put('/:code/rounds/:roundNumber/tricks', async (req, res) => {
+// ─── PUT /api/games/:code/rounds/:roundNumber/tricks — Step 2: Submit tricks (Creator Only) ─
+router.put('/:code/rounds/:roundNumber/tricks', authenticate, async (req, res) => {
   try {
     const game = await Game.findOne({ gameCode: req.params.code.toUpperCase() });
 
     if (!game) {
       return res.status(404).json({ error: 'Game not found.' });
     }
+
+    if (!verifyCreatorAccess(game, req.user, res)) return;
 
     const roundNumber = Number(req.params.roundNumber);
     const round = game.rounds.find((r) => r.roundNumber === roundNumber);
@@ -201,10 +200,7 @@ router.put('/:code/rounds/:roundNumber/tricks', async (req, res) => {
       return res.status(404).json({ error: 'Round not found.' });
     }
 
-    // Allow editing tricks on both 'calling' and 'completed' rounds
-
     const { playerTricks } = req.body;
-    // playerTricks: [{ playerName, tricks }, ...]
 
     if (!playerTricks || playerTricks.length !== 4) {
       return res.status(400).json({ error: 'Tricks for all 4 players are required.' });
@@ -255,14 +251,16 @@ router.put('/:code/rounds/:roundNumber/tricks', async (req, res) => {
   }
 });
 
-// ─── PUT /api/games/:code/rounds/:roundNumber/calls — Edit calls ────────────
-router.put('/:code/rounds/:roundNumber/calls', async (req, res) => {
+// ─── PUT /api/games/:code/rounds/:roundNumber/calls — Edit calls (Creator Only) ────────────
+router.put('/:code/rounds/:roundNumber/calls', authenticate, async (req, res) => {
   try {
     const game = await Game.findOne({ gameCode: req.params.code.toUpperCase() });
 
     if (!game) {
       return res.status(404).json({ error: 'Game not found.' });
     }
+
+    if (!verifyCreatorAccess(game, req.user, res)) return;
 
     const roundNumber = Number(req.params.roundNumber);
     const round = game.rounds.find((r) => r.roundNumber === roundNumber);

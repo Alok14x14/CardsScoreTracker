@@ -1,4 +1,4 @@
-function ScoreTable({ game, totals, onEditRound }) {
+function ScoreTable({ game, totals, onEditRound, isCreator = false }) {
   if (!game) return null;
 
   const { players = [], rounds = [], totalRounds = 5, firstPlayerIndex = 0 } = game;
@@ -76,7 +76,7 @@ function ScoreTable({ game, totals, onEditRound }) {
                         <span className="round-status-badge upcoming">Upcoming</span>
                       )}
                     </span>
-                    {isPlayed && onEditRound && (
+                    {isPlayed && isCreator && onEditRound && (
                       <button
                         className="edit-round-btn"
                         onClick={() => onEditRound(round)}

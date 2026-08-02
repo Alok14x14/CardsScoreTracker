@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getGame, createGame, submitCalls, submitTricks, editCalls } from '../api';
+import { useAuth } from '../context/AuthContext';
 import ScoreTable from '../components/ScoreTable';
 import { CallsModal, TricksModal } from '../components/AddRoundModal';
 
@@ -28,6 +29,7 @@ function createConfetti() {
 function Scorecard() {
   const { code } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [game, setGame] = useState(null);
   const [totals, setTotals] = useState({});
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,7 @@ function Scorecard() {
   const [error, setError] = useState('');
   const [showCallsModal, setShowCallsModal] = useState(false);
   const [showTricksModal, setShowTricksModal] = useState(false);
-  const [editingRound, setEditingRound] = useState(null); // round being edited
+  const [editingRound, setEditingRound] = useState(null);
   const [toast, setToast] = useState('');
   const [showConfetti, setShowConfetti] = useState(false);
   const [confettiPieces] = useState(createConfetti);
@@ -57,7 +59,10 @@ function Scorecard() {
     fetchGame();
   }, [fetchGame]);
 
-  // Check if there's a round waiting for tricks
+  const creatorId = game?.createdBy?._id || game?.createdBy;
+  const userId = user?._id || user?.id;
+  const isCreator = !!(creatorId && userId && creatorId.toString() === userId.toString());
+
   const pendingRound = game?.rounds?.find((r) => r.status === 'calling');
   const isComplete = game?.status === 'completed';
   const roundsPlayed = game?.rounds?.filter((r) => r.status === 'completed').length || 0;
@@ -65,16 +70,14 @@ function Scorecard() {
   const totalRoundsStarted = game?.rounds?.length || 0;
   const firstPlayerIndex = game?.firstPlayerIndex ?? 0;
 
-  // Who starts the next round in current game (round-robin)
   const nextStarterIndex = (firstPlayerIndex + totalRoundsStarted) % 4;
   const nextStarterName = game?.players?.[nextStarterIndex] || '';
 
-  // Who starts the first round of the NEXT game (rematch)
   const nextGameFirstPlayerIndex = (firstPlayerIndex + 1) % 4;
   const nextGameFirstPlayerName = game?.players?.[nextGameFirstPlayerIndex] || '';
 
-  // Handle rematch with same players, rotating first-round starter to next player
   const handleRematch = async () => {
+    if (!isCreator) return;
     setRematchLoading(true);
     try {
       const data = await createGame(game.players, game.totalRounds, nextGameFirstPlayerIndex);
@@ -86,54 +89,64 @@ function Scorecard() {
     }
   };
 
-  // Step 1: Submit new calls
   const handleSubmitCalls = async (playerCalls) => {
-    const data = await submitCalls(code, playerCalls);
-    setGame(data.game);
-    setTotals(data.totals);
-    setShowCallsModal(false);
-    showToastMessage(`Round ${data.game.rounds.length} calls locked! 📝 Now play the round.`);
-  };
-
-  // Step 1 edit: Edit calls on existing round
-  const handleEditCalls = async (playerCalls) => {
-    const data = await editCalls(code, editingRound.roundNumber, playerCalls);
-    setGame(data.game);
-    setTotals(data.totals);
-    setEditingRound(null);
-    setShowCallsModal(false);
-    showToastMessage(`Round ${editingRound.roundNumber} calls updated! ✓`);
-  };
-
-  // Step 2: Submit tricks (new or edit)
-  const handleSubmitTricks = async (playerTricks) => {
-    const targetRound = editingRound || pendingRound;
-    const data = await submitTricks(code, targetRound.roundNumber, playerTricks);
-    setGame(data.game);
-    setTotals(data.totals);
-    setEditingRound(null);
-    setShowTricksModal(false);
-
-    if (data.game.status === 'completed') {
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 5000);
+    if (!isCreator) return;
+    try {
+      const data = await submitCalls(code, playerCalls);
+      setGame(data.game);
+      setTotals(data.totals);
+      setShowCallsModal(false);
+      showToastMessage(`Round ${data.game.rounds.length} calls locked! 📝`);
+    } catch (err) {
+      showToastMessage(err.response?.data?.error || 'Failed to submit calls.');
     }
-
-    showToastMessage(
-      editingRound
-        ? `Round ${targetRound.roundNumber} tricks updated! ✓`
-        : `Round ${targetRound.roundNumber} complete! ✓`
-    );
   };
 
-  // Handle edit button click from ScoreTable
+  const handleEditCalls = async (playerCalls) => {
+    if (!isCreator) return;
+    try {
+      const data = await editCalls(code, editingRound.roundNumber, playerCalls);
+      setGame(data.game);
+      setTotals(data.totals);
+      setEditingRound(null);
+      setShowCallsModal(false);
+      showToastMessage(`Round ${editingRound.roundNumber} calls updated! ✓`);
+    } catch (err) {
+      showToastMessage(err.response?.data?.error || 'Failed to edit calls.');
+    }
+  };
+
+  const handleSubmitTricks = async (playerTricks) => {
+    if (!isCreator) return;
+    const targetRound = editingRound || pendingRound;
+    try {
+      const data = await submitTricks(code, targetRound.roundNumber, playerTricks);
+      setGame(data.game);
+      setTotals(data.totals);
+      setEditingRound(null);
+      setShowTricksModal(false);
+
+      if (data.game.status === 'completed') {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 5000);
+      }
+
+      showToastMessage(
+        editingRound
+          ? `Round ${targetRound.roundNumber} tricks updated! ✓`
+          : `Round ${targetRound.roundNumber} complete! ✓`
+      );
+    } catch (err) {
+      showToastMessage(err.response?.data?.error || 'Failed to submit tricks.');
+    }
+  };
+
   const handleEditRound = (round) => {
+    if (!isCreator) return;
     setEditingRound(round);
     if (round.status === 'calling') {
-      // Round in progress — edit calls
       setShowCallsModal(true);
     } else {
-      // Round completed — edit tricks
       setShowTricksModal(true);
     }
   };
@@ -144,18 +157,11 @@ function Scorecard() {
     setEditingRound(null);
   };
 
-  const copyGameCode = () => {
-    navigator.clipboard.writeText(code.toUpperCase()).then(() => {
-      showToastMessage('Game code copied! 📋');
-    });
-  };
-
   const showToastMessage = (message) => {
     setToast(message);
     setTimeout(() => setToast(''), 3000);
   };
 
-  // Find winner
   const getWinner = () => {
     if (!totals || Object.keys(totals).length === 0) return null;
     return Object.entries(totals).reduce(
@@ -179,9 +185,6 @@ function Scorecard() {
         <div className="error-state animate-fade-in">
           <div className="error-state-icon">😕</div>
           <p className="error-state-text">{error}</p>
-          <p className="error-state-sub">
-            Check the game code and make sure the server is running.
-          </p>
           <button className="btn btn-secondary" onClick={() => navigate('/')} id="go-home-btn">
             ← Go Home
           </button>
@@ -205,14 +208,10 @@ function Scorecard() {
               {isComplete ? '🏆 ' : '🃏 '}
               <span className="text-gradient">Scorecard</span>
             </h1>
-            <div
-              className="game-code-display"
-              onClick={copyGameCode}
-              title="Click to copy game code"
-              id="copy-code-btn"
-            >
-              <code>{code.toUpperCase()}</code>
-              <span className="copy-icon">📋</span>
+            <div className="game-creator-info">
+              <span className="text-muted" style={{ fontSize: '0.85rem' }}>
+                Creator: {game?.createdBy?.name || game?.createdBy?.username || 'Unknown'}
+              </span>
             </div>
             <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '4px' }}>
               Round {roundsPlayed} of {totalRoundsCount} completed
@@ -221,40 +220,48 @@ function Scorecard() {
           </div>
 
           <div className="scorecard-actions">
-            {/* Show "Make Calls" when no pending round and game not complete */}
-            {!isComplete && !pendingRound && totalRoundsStarted < totalRoundsCount && (
-              <button
-                className="btn btn-primary"
-                onClick={() => { setEditingRound(null); setShowCallsModal(true); }}
-                id="make-calls-btn"
-              >
-                📝 Make Calls (R{totalRoundsStarted + 1})
-                <span className="btn-subtitle">🎯 {nextStarterName} starts</span>
-              </button>
-            )}
+            {isCreator ? (
+              <>
+                {/* Show "Make Calls" when no pending round and game not complete */}
+                {!isComplete && !pendingRound && totalRoundsStarted < totalRoundsCount && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => { setEditingRound(null); setShowCallsModal(true); }}
+                    id="make-calls-btn"
+                  >
+                    📝 Make Calls (R{totalRoundsStarted + 1})
+                    <span className="btn-subtitle">🎯 {nextStarterName} starts</span>
+                  </button>
+                )}
 
-            {/* Show "Enter Tricks" when there's a pending round */}
-            {!isComplete && pendingRound && (
-              <button
-                className="btn btn-primary enter-tricks-btn"
-                onClick={() => { setEditingRound(null); setShowTricksModal(true); }}
-                id="enter-tricks-btn"
-              >
-                🏆 Enter Tricks (R{pendingRound.roundNumber})
-              </button>
-            )}
+                {/* Show "Enter Tricks" when there's a pending round */}
+                {!isComplete && pendingRound && (
+                  <button
+                    className="btn btn-primary enter-tricks-btn"
+                    onClick={() => { setEditingRound(null); setShowTricksModal(true); }}
+                    id="enter-tricks-btn"
+                  >
+                    🏆 Enter Tricks (R{pendingRound.roundNumber})
+                  </button>
+                )}
 
-            {/* Show "Start Rematch" when game is completed */}
-            {isComplete && (
-              <button
-                className="btn btn-primary animate-scale-in"
-                onClick={handleRematch}
-                disabled={rematchLoading}
-                id="rematch-btn"
-              >
-                {rematchLoading ? '⏳ Starting...' : '🔁 Play Again'}
-                <span className="btn-subtitle">🎯 {nextGameFirstPlayerName} starts first</span>
-              </button>
+                {/* Show "Start Rematch" when game is completed */}
+                {isComplete && (
+                  <button
+                    className="btn btn-primary animate-scale-in"
+                    onClick={handleRematch}
+                    disabled={rematchLoading}
+                    id="rematch-btn"
+                  >
+                    {rematchLoading ? '⏳ Starting...' : '🔁 Play Again'}
+                    <span className="btn-subtitle">🎯 {nextGameFirstPlayerName} starts first</span>
+                  </button>
+                )}
+              </>
+            ) : (
+              <div className="read-only-badge">
+                🔒 Read-Only (Only the game creator can edit scores)
+              </div>
             )}
           </div>
         </div>
@@ -265,14 +272,20 @@ function Scorecard() {
             <div className="pending-round-icon">🎴</div>
             <div className="pending-round-info">
               <strong>Round {pendingRound.roundNumber} in progress</strong>
-              <span>Calls are locked. Play the round, then enter tricks won.</span>
+              <span>
+                {isCreator
+                  ? 'Calls are locked. Play the round, then enter tricks won.'
+                  : 'Waiting for game creator to enter tricks.'}
+              </span>
             </div>
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => { setEditingRound(null); setShowTricksModal(true); }}
-            >
-              Enter Tricks →
-            </button>
+            {isCreator && (
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => { setEditingRound(null); setShowTricksModal(true); }}
+              >
+                Enter Tricks →
+              </button>
+            )}
           </div>
         )}
 
@@ -285,52 +298,54 @@ function Scorecard() {
               Final Score: {winner.score > 0 ? '+' : ''}
               {winner.score}
             </div>
-            <div style={{ marginTop: '20px' }}>
-              <button
-                className="btn btn-primary btn-lg"
-                onClick={handleRematch}
-                disabled={rematchLoading}
-                id="banner-rematch-btn"
-              >
-                {rematchLoading ? '⏳ Starting New Game...' : '🔁 Start Rematch (Same Players)'}
-                <span className="btn-subtitle">🎯 {nextGameFirstPlayerName} starts Round 1</span>
-              </button>
-            </div>
+            {isCreator && (
+              <div style={{ marginTop: '20px' }}>
+                <button
+                  className="btn btn-primary btn-lg"
+                  onClick={handleRematch}
+                  disabled={rematchLoading}
+                  id="banner-rematch-btn"
+                >
+                  {rematchLoading ? '⏳ Starting New Game...' : '🔁 Start Rematch (Same Players)'}
+                  <span className="btn-subtitle">🎯 {nextGameFirstPlayerName} starts Round 1</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {/* Score Table */}
-        <ScoreTable game={game} totals={totals} onEditRound={handleEditRound} />
+        <ScoreTable
+          game={game}
+          totals={totals}
+          onEditRound={isCreator ? handleEditRound : null}
+          isCreator={isCreator}
+        />
 
-        {/* Calls Modal — New or Edit */}
-        {showCallsModal && (
+        {/* Modals for Creator only */}
+        {isCreator && showCallsModal && (
           <CallsModal
-            players={game.players}
+            game={game}
             roundNumber={editingRound ? editingRound.roundNumber : totalRoundsStarted + 1}
+            initialScores={editingRound ? editingRound.scores : null}
             onSubmit={editingRound ? handleEditCalls : handleSubmitCalls}
             onClose={closeModals}
-            initialCalls={editingRound?.scores}
+            isEditing={!!editingRound}
           />
         )}
 
-        {/* Tricks Modal — New or Edit */}
-        {showTricksModal && (pendingRound || editingRound) && (
+        {isCreator && showTricksModal && (
           <TricksModal
-            players={game.players}
-            roundNumber={(editingRound || pendingRound).roundNumber}
-            roundScores={(editingRound || pendingRound).scores}
+            game={game}
+            round={editingRound || pendingRound}
             onSubmit={handleSubmitTricks}
             onClose={closeModals}
-            initialTricks={
-              editingRound?.status === 'completed'
-                ? editingRound.scores.map((s) => ({ playerName: s.playerName, tricks: s.tricks }))
-                : null
-            }
+            isEditing={!!editingRound}
           />
         )}
 
         {/* Toast */}
-        {toast && <div className="toast">{toast}</div>}
+        {toast && <div className="toast animate-fade-in-up">{toast}</div>}
 
         {/* Confetti */}
         {showConfetti && (
@@ -342,10 +357,10 @@ function Scorecard() {
                 style={{
                   left: `${p.left}%`,
                   backgroundColor: p.color,
-                  width: `${p.size}px`,
-                  height: `${p.size}px`,
                   animationDelay: `${p.delay}s`,
                   animationDuration: `${p.duration}s`,
+                  width: `${p.size}px`,
+                  height: `${p.size * 1.5}px`,
                   transform: `rotate(${p.rotation}deg)`,
                 }}
               />
